@@ -1,0 +1,205 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Phase 1 — Dataset Profiling Report</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI",system-ui,sans-serif;font-size:14px;line-height:1.6;background:#fff;color:#1f2328;padding:32px 16px}
+  .container{max-width:760px;margin:0 auto}
+  h1{font-size:22px;font-weight:700;margin-bottom:4px}
+  .subtitle{color:#57606a;font-size:13px;margin-bottom:28px}
+  h2{font-size:15px;font-weight:700;margin:28px 0 10px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;color:#1f2328}
+  h3{font-size:13px;font-weight:600;margin:16px 0 6px;color:#3b82d4}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+  th{background:#f7f8fa;font-weight:600;text-align:left;padding:6px 10px;border:1px solid #e5e7eb;color:#1f2328}
+  td{padding:5px 10px;border:1px solid #e5e7eb;vertical-align:top}
+  tr:nth-child(even) td{background:#f7f8fa}
+  .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600}
+  .ok{background:#d1fae5;color:#065f46}
+  .warn{background:#fef3c7;color:#92400e}
+  .flag{background:#fee2e2;color:#991b1b}
+  .info{background:#dbeafe;color:#1e40af}
+  .section-note{background:#f7f8fa;border-left:3px solid #3b82d4;padding:8px 12px;font-size:13px;color:#57606a;margin:8px 0 14px}
+  ul{padding-left:18px}
+  li{margin-bottom:3px;font-size:13px}
+  .footer{text-align:center;font-size:12px;color:#57606a;border-top:1px solid #e5e7eb;margin-top:40px;padding-top:14px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Food Delivery Analytics — Phase 1 Dataset Profiling Report</h1>
+<p class="subtitle">Dataset: <strong>Datasets/Order_delivery.csv</strong>  |  Profiled: 2025-06-16  |  Project: Delivery Performance &amp; Delay Prediction</p>
+
+
+<h2>1. File Overview</h2>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Filename</td><td>Order_delivery.csv</td></tr>
+  <tr><td>Format</td><td>CSV (comma-separated, UTF-8)</td></tr>
+  <tr><td>Rows</td><td>100,002</td></tr>
+  <tr><td>Columns</td><td>23</td></tr>
+  <tr><td>Missing values</td><td><span class="badge ok">0 across all columns</span></td></tr>
+  <tr><td>Exact duplicate rows</td><td><span class="badge ok">0</span></td></tr>
+  <tr><td>Date range</td><td>01 Jun 2025 10:00 → 16 Jun 2025 10:00 (16 days)</td></tr>
+  <tr><td>Geography</td><td>7 Egyptian cities (Cairo, Giza, Alexandria, Tanta, Mansoura, Zagazig, Assiut)</td></tr>
+</table>
+<div class="section-note">The row count is 100,002 — two rows beyond a round 100,000. All Order_IDs are unique (1–100,002), confirming these are legitimate extra rows, not duplicates.</div>
+
+
+<h2>2. Column Catalogue &amp; Data Types</h2>
+<table>
+  <tr><th>#</th><th>Column</th><th>Raw Dtype</th><th>Semantic Type</th><th>Role</th></tr>
+  <tr><td>1</td><td>Order_ID</td><td>int64</td><td>Sequential integer</td><td>Primary key (1–100,002, fully unique)</td></tr>
+  <tr><td>2</td><td>User_ID</td><td>str</td><td>Categorical ID (format U####)</td><td>Customer identifier — 9,000 unique users</td></tr>
+  <tr><td>3</td><td>Restaurant_ID</td><td>int64</td><td>Integer ID</td><td>Restaurant identifier — 1,000 unique</td></tr>
+  <tr><td>4</td><td>Driver_ID</td><td>int64</td><td>Integer ID</td><td>Driver identifier — 500 unique</td></tr>
+  <tr><td>5</td><td>Item_Name</td><td>str</td><td>Nominal categorical</td><td>Food item ordered — 9 unique values</td></tr>
+  <tr><td>6</td><td>Quantity</td><td>int64</td><td>Discrete numerical</td><td>Number of items ordered (1–5)</td></tr>
+  <tr><td>7</td><td>Total_Price</td><td>float64</td><td>Continuous numerical (EGP)</td><td>Order value — range 30–750 EGP</td></tr>
+  <tr><td>8</td><td>Order_Time</td><td>str → datetime</td><td>DateTime (DD-MM-YYYY HH:MM)</td><td>Timestamp when order was placed</td></tr>
+  <tr><td>9</td><td>Delivery_Time</td><td>str → datetime</td><td>DateTime (DD-MM-YYYY HH:MM)</td><td>Timestamp when delivery was completed/last updated</td></tr>
+  <tr><td>10</td><td>Delivery_Duration_Minutes</td><td>int64</td><td>Discrete numerical (minutes)</td><td><strong>Core target signal</strong> — range 15–60 min; perfectly matches computed difference</td></tr>
+  <tr><td>11</td><td>City</td><td>str</td><td>Nominal categorical</td><td>Delivery city — 7 unique, evenly distributed (~14,000 each)</td></tr>
+  <tr><td>12</td><td>Payment_Method</td><td>str</td><td>Nominal categorical</td><td>Cash / Wallet / Credit Card — balanced thirds</td></tr>
+  <tr><td>13</td><td>Order_Status</td><td>str</td><td>Nominal categorical</td><td><strong>Target variable candidate</strong> — Delivered (85.2%) / Cancelled (9.8%) / In Transit (5.0%)</td></tr>
+  <tr><td>14</td><td>Driver_Vehicle</td><td>str</td><td>Nominal categorical</td><td>Bicycle / Car / Motorbike — balanced thirds</td></tr>
+  <tr><td>15</td><td>Restaurant_Lat</td><td>float64</td><td>Geospatial (decimal degrees)</td><td>Restaurant latitude — all within Egypt bounds</td></tr>
+  <tr><td>16</td><td>Restaurant_Lon</td><td>float64</td><td>Geospatial (decimal degrees)</td><td>Restaurant longitude — all within Egypt bounds</td></tr>
+  <tr><td>17</td><td>Customer_Lat</td><td>float64</td><td>Geospatial</td><td>Customer latitude</td></tr>
+  <tr><td>18</td><td>Customer_Lon</td><td>float64</td><td>Geospatial</td><td>Customer longitude</td></tr>
+  <tr><td>19</td><td>Driver_Lat</td><td>float64</td><td>Geospatial</td><td>Driver last-known latitude</td></tr>
+  <tr><td>20</td><td>Driver_Lon</td><td>float64</td><td>Geospatial</td><td>Driver last-known longitude</td></tr>
+  <tr><td>21</td><td>Delivery_Distance_km</td><td>float64</td><td>Continuous numerical (km)</td><td>Haversine or straight-line distance — 0.009–5.60 km</td></tr>
+  <tr><td>22</td><td>Traffic_Level</td><td>str</td><td>Ordinal categorical</td><td>Low (45.8%) / Medium (25.0%) / High (29.2%) — skewed toward Low</td></tr>
+  <tr><td>23</td><td>Driver_Availability</td><td>str</td><td>Binary categorical</td><td>Online (90.1%) / Offline (9.9%)</td></tr>
+</table>
+
+
+<h2>3. Missing Values &amp; Data Quality</h2>
+<table>
+  <tr><th>Check</th><th>Result</th><th>Status</th></tr>
+  <tr><td>Missing values (any column)</td><td>0</td><td><span class="badge ok">Clean</span></td></tr>
+  <tr><td>Exact duplicate rows</td><td>0</td><td><span class="badge ok">Clean</span></td></tr>
+  <tr><td>Negative / zero prices</td><td>0</td><td><span class="badge ok">Clean</span></td></tr>
+  <tr><td>Negative / zero quantities</td><td>0</td><td><span class="badge ok">Clean</span></td></tr>
+  <tr><td>Negative / zero delivery durations</td><td>0</td><td><span class="badge ok">Clean</span></td></tr>
+  <tr><td>Deliveries timestamped before order</td><td>0</td><td><span class="badge ok">Clean</span></td></tr>
+  <tr><td>Unparseable datetime strings</td><td>0 (NaT)</td><td><span class="badge ok">Clean</span></td></tr>
+  <tr><td>Computed duration ≠ stored duration (&gt;1 min)</td><td>0</td><td><span class="badge ok">Consistent</span></td></tr>
+  <tr><td>Geo coordinates outside Egypt</td><td>0</td><td><span class="badge ok">Clean</span></td></tr>
+  <tr><td>Leading/trailing whitespace in strings</td><td>0</td><td><span class="badge ok">Clean</span></td></tr>
+  <tr><td>Offline driver with status = Delivered</td><td>8,434 rows (8.4%)</td><td><span class="badge warn">Suspicious — see §5</span></td></tr>
+  <tr><td>Offline driver with status = In Transit</td><td>466 rows (0.5%)</td><td><span class="badge warn">Suspicious — see §5</span></td></tr>
+  <tr><td>Cancelled orders with valid Delivery_Duration</td><td>9,812 rows — full duration range</td><td><span class="badge warn">Ambiguous — see §5</span></td></tr>
+</table>
+
+
+<h2>4. Numerical Column Profiles</h2>
+<table>
+  <tr><th>Column</th><th>Min</th><th>Q1</th><th>Median</th><th>Q3</th><th>Max</th><th>Mean</th><th>Std</th><th>Notes</th></tr>
+  <tr><td>Quantity</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>2.99</td><td>1.41</td><td>Perfectly uniform 1–5; no outliers</td></tr>
+  <tr><td>Total_Price (EGP)</td><td>30</td><td>129</td><td>233</td><td>382</td><td>750</td><td>269</td><td>170</td><td>Price-per-item: 30–150 EGP; clean range</td></tr>
+  <tr><td>Delivery_Duration_Minutes</td><td>15</td><td>30</td><td>38</td><td>45</td><td>60</td><td>37.5</td><td>10.1</td><td>Bounded 15–60; no extreme outliers</td></tr>
+  <tr><td>Delivery_Distance_km</td><td>0.009</td><td>1.36</td><td>2.12</td><td>2.92</td><td>5.60</td><td>2.17</td><td>1.04</td><td>Very small min (9 m) may be a same-block order</td></tr>
+  <tr><td>Restaurant_Lat / Customer_Lat / Driver_Lat</td><td>27.16</td><td>—</td><td>30.59</td><td>—</td><td>31.22</td><td>30.12</td><td>1.27</td><td>All within Egypt; cluster by city</td></tr>
+  <tr><td>Restaurant_Lon / Customer_Lon / Driver_Lon</td><td>29.90</td><td>—</td><td>31.21</td><td>—</td><td>31.52</td><td>31.06</td><td>0.49</td><td>All within Egypt; tight longitude band</td></tr>
+</table>
+
+
+<h2>5. Categorical Column Profiles</h2>
+<table>
+  <tr><th>Column</th><th>Unique</th><th>Distribution</th></tr>
+  <tr><td>City</td><td>7</td><td>Zagazig 14.5%, Cairo 14.4%, Tanta 14.3%, Assiut 14.3%, Giza 14.2%, Alexandria 14.2%, Mansoura 14.0% — well balanced</td></tr>
+  <tr><td>Item_Name</td><td>9</td><td>Shawarma 11.3%, Pizza 11.2%, Fried Chicken 11.2%, Burger 11.1%, Pasta 11.1%, Sandwich 11.1%, Koshary 11.0%, Sushi 11.0%, Salad 11.0% — perfectly balanced</td></tr>
+  <tr><td>Payment_Method</td><td>3</td><td>Cash 33.5%, Wallet 33.2%, Credit Card 33.2% — balanced thirds</td></tr>
+  <tr><td>Order_Status</td><td>3</td><td>Delivered 85.2%, Cancelled 9.8%, In Transit 5.0%</td></tr>
+  <tr><td>Driver_Vehicle</td><td>3</td><td>Bicycle 33.4%, Car 33.4%, Motorbike 33.2% — balanced thirds</td></tr>
+  <tr><td>Traffic_Level</td><td>3</td><td>Low 45.8%, High 29.2%, Medium 25.0% — Low-skewed</td></tr>
+  <tr><td>Driver_Availability</td><td>2</td><td>Online 90.1%, Offline 9.9%</td></tr>
+  <tr><td>User_ID</td><td>9,000</td><td>Prefix "U" + 4-digit number; most frequent user: 26 orders (expected for 100K ÷ 9K ≈ 11 avg)</td></tr>
+</table>
+
+
+<h2>6. DateTime Analysis</h2>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Format</td><td>DD-MM-YYYY HH:MM (string) → needs parsing to datetime64</td></tr>
+  <tr><td>Order_Time range</td><td>01 Jun 2025 10:00 → 16 Jun 2025 10:00</td></tr>
+  <tr><td>Delivery_Time range</td><td>01 Jun 2025 10:23 → 16 Jun 2025 10:52</td></tr>
+  <tr><td>Coverage</td><td>16-day window; ~6,250 orders/day on average</td></tr>
+  <tr><td>Computed vs stored duration</td><td>0 mismatches — Delivery_Duration_Minutes is exactly Delivery_Time − Order_Time</td></tr>
+  <tr><td>"In Transit" orders last seen</td><td>Concentrated on 12–16 Jun 2025 — logically the open/pending orders at snapshot time</td></tr>
+  <tr><td>Engineerable features</td><td>Hour-of-day, Day-of-week, Day-of-month, Is-Weekend, Rush-hour flag</td></tr>
+</table>
+
+
+<h2>7. Target Variable Analysis</h2>
+<h3>Primary ML Target — "Was the order delayed?"</h3>
+<div class="section-note">
+  <strong>Delivery_Duration_Minutes</strong> (15–60 min, mean ≈ 37.5 min) is the direct numeric target for regression. A binary "delayed / on-time" label can be derived by thresholding (e.g., &gt; 45 min = delayed — to be decided in Phase 3).
+  <br /><strong>Order_Status</strong> is a secondary classification target (Delivered / Cancelled / In Transit) but has strong class imbalance (85 / 10 / 5 split).
+</div>
+<table>
+  <tr><th>Candidate Target</th><th>Type</th><th>Notes</th></tr>
+  <tr><td>Delivery_Duration_Minutes</td><td>Continuous regression</td><td>Clean, bounded 15–60 min, no nulls. Primary target.</td></tr>
+  <tr><td>Derived: IsDelayed (duration &gt; threshold)</td><td>Binary classification</td><td>Threshold TBD in Phase 3; will require careful definition.</td></tr>
+  <tr><td>Order_Status</td><td>Multi-class classification</td><td>Delivered / Cancelled / In Transit. "In Transit" = open orders (snapshot artefact), not a final state.</td></tr>
+</table>
+
+
+<h2>8. Suspicious &amp; Anomalous Values</h2>
+<table>
+  <tr><th>Issue</th><th>Count</th><th>Severity</th><th>Recommended Action</th></tr>
+  <tr>
+    <td>Driver_Availability = Offline AND Order_Status = Delivered</td>
+    <td>8,434</td>
+    <td><span class="badge warn">Warn</span></td>
+    <td>Likely a snapshot field: driver went offline after completing the delivery. Do not discard. Flag as a feature-engineering note. Investigate correlation with delay in Phase 3.</td>
+  </tr>
+  <tr>
+    <td>Driver_Availability = Offline AND Order_Status = In Transit</td>
+    <td>466</td>
+    <td><span class="badge warn">Warn</span></td>
+    <td>Same reasoning — driver may have gone offline mid-delivery. Worth noting; unlikely to be a data error.</td>
+  </tr>
+  <tr>
+    <td>Cancelled orders with a full Delivery_Duration value (15–60 min)</td>
+    <td>9,812</td>
+    <td><span class="badge warn">Warn</span></td>
+    <td>Duration may represent time until cancellation, not delivery time. Exclude Cancelled rows from delay-prediction modelling, or treat duration as "time-to-cancel" separately.</td>
+  </tr>
+  <tr>
+    <td>Delivery_Distance_km min = 0.009 km (≈9 metres)</td>
+    <td>A few rows</td>
+    <td><span class="badge info">Info</span></td>
+    <td>Plausible (restaurant and customer in same building). No action needed.</td>
+  </tr>
+  <tr>
+    <td>Row count = 100,002 (not a round 100,000)</td>
+    <td>2 extra</td>
+    <td><span class="badge info">Info</span></td>
+    <td>All Order_IDs unique; rows are legitimate. No action needed.</td>
+  </tr>
+</table>
+
+
+<h2>9. Phase 1 Preprocessing Roadmap</h2>
+<ul>
+  <li><strong>Parse datetimes:</strong> Convert Order_Time and Delivery_Time from string to datetime64 using format <code>%d-%m-%Y %H:%M</code>.</li>
+  <li><strong>Engineer time features:</strong> Extract OrderHour, OrderDayOfWeek, IsWeekend, IsRushHour from Order_Time.</li>
+  <li><strong>Strip whitespace:</strong> Already clean — no action needed.</li>
+  <li><strong>Encode categoricals:</strong> Ordinal-encode Traffic_Level (Low=0, Medium=1, High=2); label/one-hot encode City, Driver_Vehicle, Payment_Method, Item_Name.</li>
+  <li><strong>Retain all 23 columns</strong> — no premature dropping; feature selection deferred to Phase 2.</li>
+  <li><strong>Do not reduce rows yet</strong> — dataset reduction deferred to Phase 2.</li>
+  <li><strong>Flag Cancelled / In Transit rows</strong> with a boolean column for easy downstream filtering.</li>
+  <li><strong>Compute derived target:</strong> After Phase 3 defines the delay threshold, derive a binary IsDelayed column.</li>
+  <li><strong>No imputation needed</strong> — zero missing values.</li>
+  <li><strong>Geo columns:</strong> Keep raw lat/lon; derived features (haversine distance between driver and restaurant at order-time) can be added in Phase 2.</li>
+</ul>
+
+<div class="footer">Made with IBM Bob</div>
+</div>
+</body>
+</html>

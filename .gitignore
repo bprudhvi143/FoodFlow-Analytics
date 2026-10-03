@@ -1,0 +1,39 @@
+# Node & Frontend Build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache & Testing
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebook Checkpoints & IDEs
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# Environment Files & Logs
+.env
+.env.*
+*.log
+logs/*.log
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Temporary Scratch Scripts
+scratch/

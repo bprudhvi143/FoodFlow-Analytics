@@ -1,0 +1,7 @@
+Time of Day,Total Orders,Delivered Orders,Cancelled Orders,In-Transit Orders,Fulfillment Rate (%),Cancellation Rate (%),Delayed Delivered Orders,Delay Rate Delivered (%),Mean Duration (min),Median Duration (min),Mean Delay Duration (min),Mean Courier Speed (km/h),Mean Order Value (EGP),Mean Distance (km),Mean Quantity
+Afternoon,2118,1798,214,106,84.89,10.1,454,25.25,37.68,38.0,1.41,3.81,271.24,2.17,3.04
+Early Morning,1660,1417,168,75,85.36,10.12,352,24.84,37.28,37.0,1.42,3.77,267.04,2.15,3.01
+Evening,1682,1419,158,105,84.36,9.39,332,23.4,37.52,38.0,1.35,3.7,274.37,2.13,3.02
+Late Night,2075,1770,200,105,85.3,9.64,429,24.24,37.44,38.0,1.29,3.76,264.98,2.16,2.98
+Morning,1254,1069,126,59,85.25,10.05,268,25.07,37.73,38.0,1.54,3.76,270.71,2.16,2.97
+Night,1211,1047,114,50,86.46,9.41,232,22.16,37.37,37.0,1.22,3.67,265.21,2.13,2.97

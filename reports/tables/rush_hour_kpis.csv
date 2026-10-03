@@ -1,0 +1,3 @@
+Rush Hour Status,Total Orders,Delivered Orders,Cancelled Orders,In-Transit Orders,Fulfillment Rate (%),Cancellation Rate (%),Delayed Delivered Orders,Delay Rate Delivered (%),Mean Duration (min),Median Duration (min),Mean Delay Duration (min),Mean Courier Speed (km/h),Mean Order Value (EGP),Mean Distance (km),Mean Quantity
+Off-Peak (0),7105,6066,689,350,85.38,9.7,1514,24.96,37.62,38.0,1.39,3.74,267.53,2.15,3.0
+Rush Hour (1),2895,2454,291,150,84.77,10.05,553,22.53,37.21,37.0,1.32,3.77,272.53,2.15,3.01

@@ -1,0 +1,254 @@
+========================================================================
+  Food Delivery Analytics — Phase 1 Preprocessing Pipeline
+  Run at: 2026-10-02 23:50:31
+========================================================================
+
+========================================================================
+  STEP 1 · LOAD RAW DATASET
+========================================================================
+  Source : Datasets\Order_delivery.csv
+  Shape  : 100,002 rows × 23 columns
+  Columns: ['Order_ID', 'User_ID', 'Restaurant_ID', 'Driver_ID', 'Item_Name', 'Quantity', 'Total_Price', 'Order_Time', 'Delivery_Time', 'Delivery_Duration_Minutes', 'City', 'Payment_Method', 'Order_Status', 'Driver_Vehicle', 'Restaurant_Lat', 'Restaurant_Lon', 'Customer_Lat', 'Customer_Lon', 'Driver_Lat', 'Driver_Lon', 'Delivery_Distance_km', 'Traffic_Level', 'Driver_Availability']
+[DECISION] Raw file is loaded into memory only.  It will NOT be written back.
+
+========================================================================
+  STEP 2 · DUPLICATE CHECKS
+========================================================================
+           Full-row duplicates: 0  (0.00%)
+[OK]       No full-row duplicates found.
+           Duplicate Order_ID values: 0  (0.00%)
+[OK]       Order_ID is unique — no primary-key violations.
+
+========================================================================
+  STEP 3 · MISSING VALUE AUDIT AND TREATMENT
+========================================================================
+[OK]       No missing values detected in any column.  No imputation required.
+[DECISION] Missing value treatment strategy is documented here for reproducibility.  If missing values appear in future data refreshes, the logic below will apply automatically.
+[DECISION] IDENTIFIER columns (Order_ID, User_ID, Restaurant_ID, Driver_ID): rows with a missing identifier are DROPPED.  Imputing an identifier with a placeholder creates false entity groupings and corrupts any aggregation performed at the customer, restaurant, or driver level.
+[OK]       No missing values in identifier columns.
+[DECISION] DATETIME columns (Order_Time, Delivery_Time): rows with a missing timestamp are DROPPED.  Delivery duration cannot be computed, and time-of-day / day-of-week features cannot be extracted.  These rows would need to be excluded from every time-sensitive analysis anyway.
+[OK]       No missing values in datetime columns.
+[DECISION] Order_Status (classification target): rows with a missing status are DROPPED.  Imputing the target variable would introduce label noise that directly corrupts model training.  Status is also a required filter for the delay prediction task.
+[OK]       No missing values in Order_Status.
+[DECISION] Delivery_Duration_Minutes (primary regression target): rows with a missing duration are DROPPED if count < 0.1% of total.  There is no valid way to impute the label of a supervised regression target without introducing circularity or heavy bias.  If count exceeds 0.1%, a note is raised for manual review.
+           Missing Delivery_Duration_Minutes: 0  (0.00%)
+[OK]       No missing values in Delivery_Duration_Minutes.
+[DECISION] Other numerical columns (Quantity, Total_Price, Delivery_Distance_km): rows with missing values are DROPPED if count < 0.1% of total.  Median imputation is used if count is between 0.1% and 1%, because these features are not direct targets.  Above 1%, a flag is raised for manual review.
+[OK]       No missing values in Quantity.
+[OK]       No missing values in Total_Price.
+[OK]       No missing values in Delivery_Distance_km.
+[DECISION] Geo coordinate columns: if a latitude/longitude pair is partially or fully missing, it is imputed with the city-level median coordinate of the same City.  A boolean flag column (e.g. Restaurant_Geo_Imputed) is added to identify imputed rows.  The city-level median is accurate to within ~0.04 degrees (~4 km), which is acceptable for city-level analytics.  Rows where City is also missing would be dropped, but City has no missing values (confirmed in profiling).
+[OK]       No missing values in Restaurant_Lat / Restaurant_Lon.
+[OK]       No missing values in Customer_Lat / Customer_Lon.
+[OK]       No missing values in Driver_Lat / Driver_Lon.
+[DECISION] Remaining categorical columns: mode imputation is applied if count < 0.5% of total.  Mode is chosen over a placeholder ('Unknown') because these columns have 2–9 balanced categories; a dedicated 'Unknown' category would appear in only a handful of rows and would create a near-zero-frequency category that degrades model performance.  Above 0.5%, rows are dropped.
+[OK]       No missing values in Item_Name.
+[OK]       No missing values in City.
+[OK]       No missing values in Payment_Method.
+[OK]       No missing values in Driver_Vehicle.
+[OK]       No missing values in Traffic_Level.
+[OK]       No missing values in Driver_Availability.
+  Rows after missing-value treatment: 100,002
+
+========================================================================
+  STEP 4 · DATA TYPE CORRECTIONS
+========================================================================
+[DECISION] Order_Time and Delivery_Time are stored as plain strings in the raw CSV (format DD-MM-YYYY HH:MM).  They are converted to datetime64[ns] using pd.to_datetime with the exact format to avoid ambiguous parsing.  errors='coerce' turns any unparseable string into NaT so it can be caught in the next validation step rather than raising an exception.
+[OK]       Order_Time parsed successfully -> dtype=datetime64[us]
+[OK]       Delivery_Time parsed successfully -> dtype=datetime64[us]
+[DECISION] Numerical columns are re-coerced with pd.to_numeric(errors='coerce') to catch any values that slipped through as object dtype due to mixed types or stray non-numeric characters in the raw CSV.  NaN values produced by coercion are then handled by the missing-value logic.
+[OK]       Order_ID -> dtype=Int64
+[OK]       Restaurant_ID -> dtype=Int64
+[OK]       Driver_ID -> dtype=Int64
+[OK]       Quantity -> dtype=Int64
+[OK]       Delivery_Duration_Minutes -> dtype=Int64
+[OK]       Total_Price -> dtype=float64
+[OK]       Restaurant_Lat -> dtype=float64
+[OK]       Restaurant_Lon -> dtype=float64
+[OK]       Customer_Lat -> dtype=float64
+[OK]       Customer_Lon -> dtype=float64
+[OK]       Driver_Lat -> dtype=float64
+[OK]       Driver_Lon -> dtype=float64
+[OK]       Delivery_Distance_km -> dtype=float64
+[OK]       User_ID -> dtype=str
+[OK]       Item_Name -> dtype=str
+[OK]       City -> dtype=str
+[OK]       Payment_Method -> dtype=str
+[OK]       Order_Status -> dtype=str
+[OK]       Driver_Vehicle -> dtype=str
+[OK]       Traffic_Level -> dtype=str
+[OK]       Driver_Availability -> dtype=str
+  Rows after dtype coercion: 100,002
+
+========================================================================
+  STEP 5 · CATEGORICAL STANDARDISATION
+========================================================================
+[DECISION] Leading and trailing whitespace is stripped from all string columns.  Trailing spaces are invisible in CSV viewers but cause category splits ('Delivered ' != 'Delivered') that inflate unique-value counts and break joins and groupby operations.
+[OK]       User_ID: no whitespace issues found.
+[OK]       Item_Name: no whitespace issues found.
+[OK]       City: no whitespace issues found.
+[OK]       Payment_Method: no whitespace issues found.
+[OK]       Order_Status: no whitespace issues found.
+[OK]       Driver_Vehicle: no whitespace issues found.
+[OK]       Traffic_Level: no whitespace issues found.
+[OK]       Driver_Availability: no whitespace issues found.
+[DECISION] Known fixed-vocabulary columns are normalised to their canonical capitalisation using a lookup map.  This corrects accidental all-lowercase or all-uppercase variants (e.g. 'high' -> 'High', 'BICYCLE' -> 'Bicycle') without altering meaningful case distinctions like 'U3522' for User_ID.
+[OK]       Order_Status: all values already in canonical form.
+[OK]       Driver_Vehicle: all values already in canonical form.
+[OK]       Traffic_Level: all values already in canonical form.
+[OK]       Driver_Availability: all values already in canonical form.
+[OK]       Payment_Method: all values already in canonical form.
+[OK]       City: all values already in canonical form.
+[OK]       Item_Name: all values already in canonical form.
+[DECISION] After standardisation, each fixed-vocabulary column is checked against its expected value set.  Any unexpected value is flagged.  Unexpected values are NOT silently dropped — they require human decision before any action (might represent a new valid category).
+[OK]       Order_Status: all values are within the expected category set ['Cancelled', 'Delivered', 'In Transit'].
+[OK]       Driver_Vehicle: all values are within the expected category set ['Bicycle', 'Car', 'Motorbike'].
+[OK]       Traffic_Level: all values are within the expected category set ['High', 'Low', 'Medium'].
+[OK]       Driver_Availability: all values are within the expected category set ['Offline', 'Online'].
+[OK]       Payment_Method: all values are within the expected category set ['Cash', 'Credit Card', 'Wallet'].
+[OK]       City: all values are within the expected category set ['Alexandria', 'Assiut', 'Cairo', 'Giza', 'Mansoura', 'Tanta', 'Zagazig'].
+[OK]       Item_Name: all values are within the expected category set ['Burger', 'Fried Chicken', 'Koshary', 'Pasta', 'Pizza', 'Salad', 'Sandwich', 'Shawarma', 'Sushi'].
+[DECISION] User_ID format is validated against the pattern U#### (U followed by exactly 4 digits).  Non-conforming IDs are flagged.  They are NOT automatically dropped because the ID might still be valid for the business; however, they should not be used as a join key without review.
+[OK]       User_ID: all values match U#### format.
+  Rows after categorical standardisation: 100,002
+
+========================================================================
+  STEP 6 · NUMERICAL VALIDITY CHECKS
+========================================================================
+[DECISION] Numerical impossibility checks use domain knowledge to define hard lower and upper limits.  Values outside these limits are physically or operationally impossible (e.g. a negative price, a zero quantity, a delivery that takes 0 seconds).  Statistical outliers within the valid range are NOT removed here — that is a modelling decision made in Phase 2 based on the chosen algorithm.
+[OK]       Quantity: all values are within valid range [1, 5].  Items per order: must be 1–5 (per dataset domain).
+[OK]       Total_Price: all values are within valid range [0.01, None].  Price must be positive (> 0 EGP).
+[OK]       Delivery_Duration_Minutes: all values are within valid range [5, 240].  Duration must be 5–240 min.
+[OK]       Delivery_Distance_km: all values are within valid range [0.001, 100].  Distance must be > 1 m and < 100 km.
+[OK]       Restaurant_Lat: all values are within valid range [20.0, 33.0].  Restaurant latitude must be within Egypt.
+[OK]       Restaurant_Lon: all values are within valid range [24.0, 38.0].  Restaurant longitude must be within Egypt.
+[OK]       Customer_Lat: all values are within valid range [20.0, 33.0].  Customer latitude must be within Egypt.
+[OK]       Customer_Lon: all values are within valid range [24.0, 38.0].  Customer longitude must be within Egypt.
+[OK]       Driver_Lat: all values are within valid range [20.0, 33.0].  Driver latitude must be within Egypt.
+[OK]       Driver_Lon: all values are within valid range [24.0, 38.0].  Driver longitude must be within Egypt.
+[OK]       No rows with impossible numerical values found.
+  Rows after numerical validation: 100,002
+
+========================================================================
+  STEP 7 · DATETIME VALIDATION
+========================================================================
+[OK]       No NaT values in Order_Time or Delivery_Time after parsing.
+[DECISION] A delivery cannot be completed before the order was placed.  Any row where Delivery_Time < Order_Time is a data error (likely a year/month swap or timezone corruption) and is dropped.  A row where Delivery_Time == Order_Time would mean 0-minute delivery, which is also impossible and is caught by the duration check below.
+           Delivery before Order (impossible): 0  (0.00%)
+[OK]       All Delivery_Time values are at or after Order_Time.
+[DECISION] Delivery_Duration_Minutes is independently stored in the CSV.  It is cross-checked against the computed value (Delivery_Time - Order_Time in minutes).  A mismatch > 1 minute indicates that either the timestamps or the stored duration field was incorrectly recorded.  When there is a mismatch, the COMPUTED value is trusted (derived from two independent timestamp fields) and the stored duration is overwritten.  This ensures downstream calculations use a consistent duration regardless of which field was wrong.
+[OK]       Delivery_Duration_Minutes is perfectly consistent with the computed difference.
+[DECISION] Order dates are validated against the expected dataset window (Jun 2025).  Dates outside this window may indicate format misparses (e.g. DD-MM ambiguity) and are flagged for review.  They are NOT automatically dropped — a date just outside the window could be a legitimate edge-case order.
+[OK]       All Order_Time values fall within the 2025 calendar year.
+  Rows after datetime validation: 100,002
+
+========================================================================
+  STEP 8 · PLACEHOLDER AND SUSPICIOUS VALUE SCAN
+========================================================================
+[DECISION] Placeholder strings are a common data-entry error in which an operator enters a dummy value instead of a real one.  The following patterns are checked (case-insensitive after strip): 'unknown', 'n/a', '-', 'none', 'null', '', '0', '?', 'na', 'not available', 'n.a.'.  Any matched cell is converted to NaN so that the missing-value logic (Step 3) handles it consistently.
+[OK]       No placeholder strings found in any categorical column.
+[DECISION] Zero values are checked in columns where zero has no valid real-world meaning: Quantity (you cannot order 0 items), Total_Price (an order with zero cost is likely a test record).  Zeros in Delivery_Distance_km are physically impossible (restaurant and customer cannot be at the same GPS coordinate).  These are converted to NaN for re-handling.
+[OK]       Quantity: no zero values found.
+[OK]       Total_Price: no zero values found.
+[DECISION] Rows where Restaurant_Lat equals Customer_Lat AND Restaurant_Lon equals Customer_Lon to 6 decimal places are flagged.  These represent a delivery distance of exactly 0 metres, which is a data-generation anomaly.  They are NOT dropped — a delivery to the same address as the restaurant is uncommon but not impossible (e.g. an office in the same building).  They are flagged with a boolean column 'Same_Location_Flag' for downstream awareness.
+[OK]       No rows with identical restaurant and customer coordinates.
+  Rows after placeholder scan: 100,002
+
+========================================================================
+  STEP 8b · SECOND MISSING-VALUE PASS (post-placeholder scan)
+========================================================================
+[DECISION] Placeholder values converted to NaN in Step 8 are handled here using the same strategy as Step 3.
+
+========================================================================
+  STEP 3 · MISSING VALUE AUDIT AND TREATMENT
+========================================================================
+[OK]       No missing values detected in any column.  No imputation required.
+[DECISION] Missing value treatment strategy is documented here for reproducibility.  If missing values appear in future data refreshes, the logic below will apply automatically.
+[DECISION] IDENTIFIER columns (Order_ID, User_ID, Restaurant_ID, Driver_ID): rows with a missing identifier are DROPPED.  Imputing an identifier with a placeholder creates false entity groupings and corrupts any aggregation performed at the customer, restaurant, or driver level.
+[OK]       No missing values in identifier columns.
+[DECISION] DATETIME columns (Order_Time, Delivery_Time): rows with a missing timestamp are DROPPED.  Delivery duration cannot be computed, and time-of-day / day-of-week features cannot be extracted.  These rows would need to be excluded from every time-sensitive analysis anyway.
+[OK]       No missing values in datetime columns.
+[DECISION] Order_Status (classification target): rows with a missing status are DROPPED.  Imputing the target variable would introduce label noise that directly corrupts model training.  Status is also a required filter for the delay prediction task.
+[OK]       No missing values in Order_Status.
+[DECISION] Delivery_Duration_Minutes (primary regression target): rows with a missing duration are DROPPED if count < 0.1% of total.  There is no valid way to impute the label of a supervised regression target without introducing circularity or heavy bias.  If count exceeds 0.1%, a note is raised for manual review.
+           Missing Delivery_Duration_Minutes: 0  (0.00%)
+[OK]       No missing values in Delivery_Duration_Minutes.
+[DECISION] Other numerical columns (Quantity, Total_Price, Delivery_Distance_km): rows with missing values are DROPPED if count < 0.1% of total.  Median imputation is used if count is between 0.1% and 1%, because these features are not direct targets.  Above 1%, a flag is raised for manual review.
+[OK]       No missing values in Quantity.
+[OK]       No missing values in Total_Price.
+[OK]       No missing values in Delivery_Distance_km.
+[DECISION] Geo coordinate columns: if a latitude/longitude pair is partially or fully missing, it is imputed with the city-level median coordinate of the same City.  A boolean flag column (e.g. Restaurant_Geo_Imputed) is added to identify imputed rows.  The city-level median is accurate to within ~0.04 degrees (~4 km), which is acceptable for city-level analytics.  Rows where City is also missing would be dropped, but City has no missing values (confirmed in profiling).
+[OK]       No missing values in Restaurant_Lat / Restaurant_Lon.
+[OK]       No missing values in Customer_Lat / Customer_Lon.
+[OK]       No missing values in Driver_Lat / Driver_Lon.
+[DECISION] Remaining categorical columns: mode imputation is applied if count < 0.5% of total.  Mode is chosen over a placeholder ('Unknown') because these columns have 2–9 balanced categories; a dedicated 'Unknown' category would appear in only a handful of rows and would create a near-zero-frequency category that degrades model performance.  Above 0.5%, rows are dropped.
+[OK]       No missing values in Item_Name.
+[OK]       No missing values in City.
+[OK]       No missing values in Payment_Method.
+[OK]       No missing values in Driver_Vehicle.
+[OK]       No missing values in Traffic_Level.
+[OK]       No missing values in Driver_Availability.
+  Rows after missing-value treatment: 100,002
+
+========================================================================
+  STEP 9 · DERIVED COLUMNS AND ENCODINGS
+========================================================================
+[DECISION] Time-based features are derived from Order_Time (now datetime64).  These features are essential for analytics and are used as ML features in Phase 2/4.  They do not modify Order_Time or Delivery_Time — they are additive new columns.
+[OK]       Added: Order_Hour, Order_DayOfWeek, Order_DayOfMonth, Is_Weekend, Is_RushHour
+[DECISION] Price_Per_Item = Total_Price / Quantity.  This captures the per-unit item tier (cheap vs expensive items) independently of order size.  Useful for analytics and as a feature that decouples price from quantity effects.
+[OK]       Added: Price_Per_Item
+[DECISION] Traffic_Level has a natural order (Low < Medium < High) and is ordinal-encoded as integers 0/1/2.  This allows the ordering to be preserved in distance-based and linear models.  The original string column is retained for interpretability.
+[OK]       Added: Traffic_Level_Enc (Low=0, Medium=1, High=2)
+[DECISION] Driver_Availability is binary (Online / Offline) and is encoded as a single integer (1 / 0).  The original string column is retained.
+[OK]       Added: Driver_Online (Online=1, Offline=0)
+[DECISION] Boolean flag columns for order status are added to simplify downstream filtering.  Models predicting delivery delay should operate only on Is_Delivered=1 rows.  Cancelled and In Transit rows are preserved for separate analyses.
+[OK]       Added: Is_Delivered, Is_Cancelled, Is_InTransit
+  Columns after derived additions: 38
+
+========================================================================
+  STEP 10 · FINAL AUDIT
+========================================================================
+  Raw dataset shape  : 100,002 rows × 23 columns
+  Clean dataset shape: 100,002 rows × 38 columns
+  Rows removed       : 0
+  Columns added      : 15
+[OK]       Cleaned dataset has zero missing values.
+[OK]       Cleaned dataset has zero duplicate rows.
+[OK]       Order_ID is unique in the cleaned dataset.
+[OK]       Order_Time dtype: datetime64[us]
+[OK]       Delivery_Time dtype: datetime64[us]
+[OK]       AUDIT PASSED: Delivery_Duration_Minutes is within valid range.
+[OK]       AUDIT PASSED: Delivery_Distance_km is within valid range.
+[OK]       AUDIT PASSED: Quantity is within valid range.
+[OK]       AUDIT PASSED: Total_Price is within valid range.
+[OK]       AUDIT PASSED: all Delivery_Time >= Order_Time.
+[OK]       New column present: Order_Hour
+[OK]       New column present: Order_DayOfWeek
+[OK]       New column present: Order_DayOfMonth
+[OK]       New column present: Is_Weekend
+[OK]       New column present: Is_RushHour
+[OK]       New column present: Price_Per_Item
+[OK]       New column present: Traffic_Level_Enc
+[OK]       New column present: Driver_Online
+[OK]       New column present: Is_Delivered
+[OK]       New column present: Is_Cancelled
+[OK]       New column present: Is_InTransit
+[OK]       New column present: Same_Location_Flag
+[OK]       New column present: Restaurant_Geo_Imputed
+[OK]       New column present: Customer_Geo_Imputed
+[OK]       New column present: Driver_Geo_Imputed
+
+========================================================================
+  STEP 11 · SAVE CLEANED DATASET
+========================================================================
+  Saved : Datasets\Order_delivery_cleaned.csv
+  Shape : 100,002 rows × 38 columns
+  Size  : 23,200.8 KB
+[DECISION] The raw file 'Datasets\Order_delivery.csv' was NOT modified.  The cleaned file 'Datasets\Order_delivery_cleaned.csv' is a separate, independent copy.
+
+========================================================================
+  PIPELINE COMPLETE
+========================================================================
+  Raw dataset       : Datasets\Order_delivery.csv  (100,002 rows, UNCHANGED)
+  Cleaned dataset   : Datasets\Order_delivery_cleaned.csv  (100,002 rows)
+  Preprocessing log : preprocessing_report.txt

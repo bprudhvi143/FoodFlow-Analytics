@@ -1,0 +1,275 @@
+========================================================================
+  Food Delivery Analytics - Feature Engineering Pipeline
+  Run at: 2026-10-02 23:56:55
+========================================================================
+
+========================================================================
+  STEP 1 - LOAD CLEANED DATASET
+========================================================================
+  Source: Datasets\Order_delivery_cleaned.csv
+  Shape : 100,002 rows x 38 columns
+[OK]       Order_Time parsed -> datetime64[us]
+[OK]       Delivery_Time parsed -> datetime64[us]
+[OK]       Dataset loaded. Columns available: ['Order_ID', 'User_ID', 'Restaurant_ID', 'Driver_ID', 'Item_Name', 'Quantity', 'Total_Price', 'Order_Time', 'Delivery_Time', 'Delivery_Duration_Minutes', 'City', 'Payment_Method', 'Order_Status', 'Driver_Vehicle', 'Restaurant_Lat', 'Restaurant_Lon', 'Customer_Lat', 'Customer_Lon', 'Driver_Lat', 'Driver_Lon', 'Delivery_Distance_km', 'Traffic_Level', 'Driver_Availability', 'Restaurant_Geo_Imputed', 'Customer_Geo_Imputed', 'Driver_Geo_Imputed', 'Same_Location_Flag', 'Order_Hour', 'Order_DayOfWeek', 'Order_DayOfMonth', 'Is_Weekend', 'Is_RushHour', 'Price_Per_Item', 'Traffic_Level_Enc', 'Driver_Online', 'Is_Delivered', 'Is_Cancelled', 'Is_InTransit']
+
+========================================================================
+  STEP 2 - PRE-ORDER TEMPORAL FEATURES
+========================================================================
+[FEATURE]  Order_Date = Order_Time.dt.date  [PRE_ORDER]
+[OK]       Order_Date range: 2025-06-01 -> 2025-06-16
+[FEATURE]  Order_Month = Order_Time.dt.month  [PRE_ORDER]
+[OK]       Order_Month unique values: [np.int32(6)]
+[FEATURE]  Order_DayName = Order_Time.dt.day_name()  [PRE_ORDER]
+[OK]       Order_DayName values: {'Sunday': 17319, 'Monday': 16136, 'Thursday': 13371, 'Tuesday': 13341, 'Saturday': 13306, 'Wednesday': 13284, 'Friday': 13245}
+[FEATURE]  Time_Of_Day_Segment: categorise Order_Hour into 6 named time bands [PRE_ORDER]
+[OK]       Time_Of_Day_Segment counts:
+Time_Of_Day_Segment
+Late Night       21018
+Afternoon        20894
+Early Morning    16617
+Evening          16605
+Morning          12453
+Night            12415
+[FEATURE]  Is_Weekday = 1 - Is_Weekend  [PRE_ORDER]
+[OK]       Is_Weekday: 1=69,377  0=30,625
+
+========================================================================
+  STEP 3 - PRE-ORDER GEOGRAPHIC FEATURES
+========================================================================
+[FEATURE]  Driver_To_Restaurant_km = Haversine(Driver_Lat/Lon, Restaurant_Lat/Lon) [PRE_ORDER]
+[OK]       Driver_To_Restaurant_km: all 100,002 values are within [0, 50].
+[OK]       Driver_To_Restaurant_km stats:
+count    100002.0000
+mean          2.1657
+std           1.0375
+min           0.0086
+25%           1.3544
+50%           2.1202
+75%           2.9230
+max           5.6072
+[FEATURE]  Total_Trip_km = Driver_To_Restaurant_km + Delivery_Distance_km [PRE_ORDER]
+[OK]       Total_Trip_km: all 100,002 values are within [0, 100].
+[OK]       Total_Trip_km stats:
+count    100002.0000
+mean          4.3310
+std           1.5532
+min           0.2110
+25%           3.2039
+50%           4.2189
+75%           5.3652
+max          10.7866
+[FEATURE]  Distance_Bin: bucket Delivery_Distance_km into 4 bands  [PRE_ORDER]
+[OK]       Distance_Bin counts:
+Distance_Bin
+Short (<1km)        14829
+Medium (1-3km)      62240
+Long (3-5km)        22779
+Very Long (>5km)      154
+
+========================================================================
+  STEP 4 - PRE-ORDER ORDER FEATURES
+========================================================================
+[FEATURE]  Order_Value_Tier: bucket Total_Price into 4 price tiers  [PRE_ORDER]
+[OK]       Order_Value_Tier counts:
+Order_Value_Tier
+Budget (<100)         15554
+Standard (100-300)    48879
+Premium (300-500)     23249
+Luxury (>500)         12320
+[FEATURE]  Is_Large_Order = 1 if Quantity >= 4 else 0  [PRE_ORDER]
+[OK]       Is_Large_Order: 1=39,609  0=60,393
+[FEATURE]  Is_High_Traffic = 1 if Traffic_Level == 'High' else 0  [PRE_ORDER]
+[OK]       Is_High_Traffic: 1=29,221  0=70,781
+
+========================================================================
+  STEP 5 - POST-DELIVERY OUTCOME FEATURES  [TARGET / LEAKAGE ZONE]
+========================================================================
+[LEAKAGE]  All features derived in this step are POST_DELIVERY outcomes. They are labelled with suffix _TARGET and must NOT be used as model input features. Use them only as prediction targets or for retrospective analytics.
+  Delay threshold (p75 of Delivered orders): 45.0 minutes
+[FEATURE]  Is_Delayed_TARGET = 1 if Delivery_Duration_Minutes > 45 min (p75 of Delivered orders)  [POST_DELIVERY TARGET]
+[OK]       Is_Delayed_TARGET (Delivered only): 20,675 delayed (24.3% of Delivered orders)
+[OK]       Is_Delayed_TARGET: all 100,002 values are within [0, 1].
+[FEATURE]  Delay_Minutes_TARGET = max(0, Delivery_Duration_Minutes - threshold) [POST_DELIVERY TARGET]
+[OK]       Delay_Minutes_TARGET: mean=1.38 max=15.0 min
+[FEATURE]  Duration_Bin_TARGET: bucket Delivery_Duration_Minutes into Fast/Normal/Slow  [POST_DELIVERY TARGET]
+[OK]       Duration_Bin_TARGET counts:
+Duration_Bin_TARGET
+Fast (<30min)        24054
+Normal (30-45min)    48576
+Slow (>45min)        27372
+[FEATURE]  Order_To_Delivery_Minutes_TARGET = (Delivery_Time - Order_Time) in minutes [POST_DELIVERY TARGET] -- redundant with Delivery_Duration_Minutes, included for explicit auditability
+[OK]       Order_To_Delivery_Minutes_TARGET matches Delivery_Duration_Minutes exactly for all rows.
+  Leakage-flagged columns so far: ['Is_Delayed_TARGET', 'Delay_Minutes_TARGET', 'Duration_Bin_TARGET', 'Order_To_Delivery_Minutes_TARGET']
+
+========================================================================
+  STEP 6 - ANALYTICS FLAGS
+========================================================================
+[LEAKAGE]  Is_Delivered (from preprocessing) = POST_DELIVERY status outcome. Do not use as a model input feature. Already present in dataset.
+[FEATURE]  Delivery_Speed_kmh_ANALYTICAL = (Delivery_Distance_km / Delivery_Duration_Minutes) * 60  [POST_DELIVERY - analytics only]
+[OK]       Delivery_Speed_kmh_ANALYTICAL: all 100,002 values are within [0, 200].
+[OK]       Delivery_Speed_kmh_ANALYTICAL stats:
+count    100002.000
+mean          3.763
+std           2.233
+min           0.015
+25%           2.129
+50%           3.413
+75%           4.949
+max          19.703
+[FEATURE]  Distance_Per_Minute_ANALYTICAL = Delivery_Distance_km / Delivery_Duration_Minutes  [POST_DELIVERY - analytics only]
+[OK]       Distance_Per_Minute_ANALYTICAL: mean=0.06272
+
+========================================================================
+  STEP 7 - FEATURE REGISTRY AND LEAKAGE SUMMARY
+========================================================================
+  Delay threshold used: 45.0 minutes
+
+  New features added in this script: 17
+  Feature                                       Availability         Leakage?
+  --------------------------------------------- -------------------- --------
+  Order_Date                                    PRE_ORDER            No
+  Order_Month                                   PRE_ORDER            No
+  Order_DayName                                 PRE_ORDER            No
+  Time_Of_Day_Segment                           PRE_ORDER            No
+  Is_Weekday                                    PRE_ORDER            No
+  Driver_To_Restaurant_km                       PRE_ORDER            No
+  Total_Trip_km                                 PRE_ORDER            No
+  Distance_Bin                                  PRE_ORDER            No
+  Order_Value_Tier                              PRE_ORDER            No
+  Is_Large_Order                                PRE_ORDER            No
+  Is_High_Traffic                               PRE_ORDER            No
+  Is_Delayed_TARGET                             POST_DELIVERY        YES ***
+  Delay_Minutes_TARGET                          POST_DELIVERY        YES ***
+  Duration_Bin_TARGET                           POST_DELIVERY        YES ***
+  Order_To_Delivery_Minutes_TARGET              POST_DELIVERY        YES ***
+  Delivery_Speed_kmh_ANALYTICAL                 POST_DELIVERY        YES ***
+  Distance_Per_Minute_ANALYTICAL                POST_DELIVERY        YES ***
+
+  Safe ML input features (PRE_ORDER, no leakage): 39
+    - Item_Name
+    - Quantity
+    - Total_Price
+    - City
+    - Payment_Method
+    - Driver_Vehicle
+    - Restaurant_Lat
+    - Restaurant_Lon
+    - Customer_Lat
+    - Customer_Lon
+    - Driver_Lat
+    - Driver_Lon
+    - Delivery_Distance_km
+    - Traffic_Level
+    - Driver_Availability
+    - Restaurant_Geo_Imputed
+    - Customer_Geo_Imputed
+    - Driver_Geo_Imputed
+    - Same_Location_Flag
+    - Order_Hour
+    - Order_DayOfWeek
+    - Order_DayOfMonth
+    - Is_Weekend
+    - Is_RushHour
+    - Price_Per_Item
+    - Traffic_Level_Enc
+    - Driver_Online
+    - Is_Cancelled
+    - Is_InTransit
+    - Order_Month
+    - Order_DayName
+    - Time_Of_Day_Segment
+    - Is_Weekday
+    - Driver_To_Restaurant_km
+    - Total_Trip_km
+    - Distance_Bin
+    - Order_Value_Tier
+    - Is_Large_Order
+    - Is_High_Traffic
+
+========================================================================
+  STEP 8 - FINAL VALIDATION
+========================================================================
+[OK]       Shape: 100,002 rows x 55 columns
+[OK]       Row count unchanged at 100,002.
+[OK]       No null values in any column.
+[OK]       Is_Weekday: all values are 0 or 1.
+[OK]       Is_Large_Order: all values are 0 or 1.
+[OK]       Is_High_Traffic: all values are 0 or 1.
+[OK]       Is_Delayed_TARGET: all values are 0 or 1.
+[OK]       Driver_To_Restaurant_km range: [0.0086, 5.6072] km
+[OK]       Is_Delayed_TARGET: flags are perfectly consistent with threshold 45.0 min.
+[OK]       Delivery_Speed_kmh_ANALYTICAL: all values >= 0.
+[OK]       Final column list (55 total):
+  Order_ID
+  User_ID
+  Restaurant_ID
+  Driver_ID
+  Item_Name
+  Quantity
+  Total_Price
+  Order_Time
+  Delivery_Time
+  Delivery_Duration_Minutes
+  City
+  Payment_Method
+  Order_Status
+  Driver_Vehicle
+  Restaurant_Lat
+  Restaurant_Lon
+  Customer_Lat
+  Customer_Lon
+  Driver_Lat
+  Driver_Lon
+  Delivery_Distance_km
+  Traffic_Level
+  Driver_Availability
+  Restaurant_Geo_Imputed
+  Customer_Geo_Imputed
+  Driver_Geo_Imputed
+  Same_Location_Flag
+  Order_Hour
+  Order_DayOfWeek
+  Order_DayOfMonth
+  Is_Weekend
+  Is_RushHour
+  Price_Per_Item
+  Traffic_Level_Enc
+  Driver_Online
+  Is_Delivered
+  Is_Cancelled
+  Is_InTransit
+  Order_Date
+  Order_Month
+  Order_DayName
+  Time_Of_Day_Segment
+  Is_Weekday
+  Driver_To_Restaurant_km
+  Total_Trip_km
+  Distance_Bin
+  Order_Value_Tier
+  Is_Large_Order
+  Is_High_Traffic
+  Is_Delayed_TARGET
+  Delay_Minutes_TARGET
+  Duration_Bin_TARGET
+  Order_To_Delivery_Minutes_TARGET
+  Delivery_Speed_kmh_ANALYTICAL
+  Distance_Per_Minute_ANALYTICAL
+
+========================================================================
+  STEP 9 - SAVE FEATURED DATASET
+========================================================================
+[OK]       Saved: Datasets\Order_delivery_featured.csv  (100,002 rows x 55 columns, 35,803 KB)
+  Input (cleaned):  Datasets\Order_delivery_cleaned.csv
+  Output (featured): Datasets\Order_delivery_featured.csv
+  Feature report:    feature_engineering_report.txt
+
+========================================================================
+  PIPELINE COMPLETE
+========================================================================
+  Input rows    : 100,002 (unchanged)
+  Output columns: 55
+  Delay threshold: 45.0 min
+  Leakage-flagged columns: ['Is_Delayed_TARGET', 'Delay_Minutes_TARGET', 'Duration_Bin_TARGET', 'Order_To_Delivery_Minutes_TARGET', 'Is_Delivered', 'Delivery_Speed_kmh_ANALYTICAL', 'Distance_Per_Minute_ANALYTICAL']
+  Featured dataset: Datasets\Order_delivery_featured.csv
+  Feature report  : feature_engineering_report.txt

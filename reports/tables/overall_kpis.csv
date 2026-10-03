@@ -1,0 +1,24 @@
+KPI Metric Name,Value
+1. Total Orders,10000.0
+2. Delivered Orders,8520.0
+3. Cancelled Orders,980.0
+4. In-Transit Orders,500.0
+5. Overall Delayed Orders (All),2417.0
+5b. Overall Delayed Orders (Delivered),2067.0
+6. Delay Rate among Delivered Orders (%),24.26
+6b. Overall Delay Rate All Orders (%),24.17
+7. Average Delivery Duration (min),37.5
+8. Median Delivery Duration (min),38.0
+9. Minimum Delivery Duration (min),15.0
+10. Maximum Delivery Duration (min),60.0
+11. Average Delay Duration - All Delivered (min),1.37
+11b. Average Delay Duration - Delayed Only (min),5.65
+12. Median Delay Duration - All Delivered (min),0.0
+12b. Median Delay Duration - Delayed Only (min),5.0
+13. Average Order Value (EGP),268.97
+14. Average Delivery Distance (km),2.15
+15. Average Quantity per Order,3.0
+Fulfillment Rate (%),85.2
+Cancellation Rate (%),9.8
+Average Effective Speed (km/h),3.75
+Average Dispatch Distance (km),2.17

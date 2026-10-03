@@ -1,0 +1,5 @@
+Distance Category,Total Orders,Delivered Orders,Cancelled Orders,In-Transit Orders,Fulfillment Rate (%),Cancellation Rate (%),Delayed Delivered Orders,Delay Rate Delivered (%),Mean Duration (min),Median Duration (min),Mean Delay Duration (min),Mean Courier Speed (km/h),Mean Order Value (EGP),Mean Distance (km),Mean Quantity
+Long (3-5km),2268,1921,219,128,84.7,9.66,456,23.74,37.48,38.0,1.33,6.24,271.44,3.59,3.04
+Medium (1-3km),6194,5318,585,291,85.86,9.44,1286,24.18,37.44,38.0,1.37,3.47,267.15,1.99,2.98
+Short (<1km),1525,1270,176,79,83.28,11.54,321,25.28,37.8,38.0,1.46,1.11,272.36,0.64,3.03
+Very Long (>5km),13,11,0,2,84.62,0.0,4,36.36,38.55,36.0,0.91,8.33,308.77,5.16,2.77
